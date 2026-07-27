@@ -1,0 +1,51 @@
+# Contributor: ScrumpyJack <scrumpyjack@st.ilet.to>
+# Maintainer: Leon White <badfunkstripe@gmail.com>
+pkgname=virtualgl
+pkgver=3.1.4
+pkgrel=0
+pkgdesc="Toolkit to run remote OpenGL applications with full 3D hardware acceleration"
+url="https://virtualgl.org/"
+arch="all"
+license="LGPL-2.1-or-later"
+makedepends="
+	cmake
+	libjpeg-turbo-dev
+	libx11-dev
+	libxtst-dev
+	libxv-dev
+	openssl-dev
+	ninja
+	xcb-util-keysyms-dev
+	"
+subpackages="$pkgname-doc"
+source="https://github.com/VirtualGL/virtualgl/releases/download/$pkgver/VirtualGL-$pkgver.tar.gz
+	0001-test.patch"
+builddir="$srcdir/VirtualGL-$pkgver"
+
+build() {
+	export CFLAGS="$CFLAGS -lsysv-ipc -lsocket"
+	#export CXXFLAGS="$CXXFLAGS -lsysv-ipc -lsocket"
+	cmake -B build -G Ninja \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_DOCDIR=/usr/share/doc/$pkgname \
+		-DVGL_BUILDSERVER=OFF \
+        	-DVGL_USEXV=OFF
+	cmake --build build
+}
+
+package() {
+	DESTDIR="$pkgdir" cmake --install build
+	# conflicts with mesa-utils
+	#mv "$pkgdir"/usr/bin/eglinfo "$pkgdir"/usr/bin/virtualgl-eglinfo
+	#mv "$pkgdir"/usr/bin/glxinfo "$pkgdir"/usr/bin/virtualgl-glxinfo
+
+	# not required
+	rm -f "$pkgdir"/usr/bin/.vglrun.vars64
+}
+
+
+sha512sums="
+266af1ddb923e07f52bba166cd6dd6066b371928946a0cd7cf5d200dde2b4bad6d3c7f1477dd6c575f830b42705468d444e413eedb4305ec34dfefab138d949f  VirtualGL-3.1.4.tar.gz
+e3dee2a640d5e3b2be9ffd0bf784860e5966d63b8d74904f706d115acc261f68e11bc0fd7f02ec9f63c9698ab2af4c716a6fdfdf64a1133b64934e9ff3428d1e  0001-test.patch
+"

@@ -1,0 +1,282 @@
+From b06ebbed4f4f48db927c0ba4b53d5d499befd968 Mon Sep 17 00:00:00 2001
+From: felixlionardo <flionardo@blackberry.com>
+Date: Mon, 27 Jul 2026 14:06:33 -0400
+Subject: [PATCH] test
+
+---
+ CMakeLists.txt        | 25 ++++++++++++++++++++++---
+ client/CMakeLists.txt | 11 ++++++++---
+ client/ClientWin.cpp  | 42 ++++++++++++++++++++++++++++++++++++++----
+ client/vglclient.cpp  | 12 ++++++++++--
+ common/CMakeLists.txt |  6 ++++--
+ util/CMakeLists.txt   | 12 +++++++-----
+ 6 files changed, 89 insertions(+), 19 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index fc2e15bd..e215c6a6 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -320,16 +320,33 @@ include(FindX11)
+ # Clarify that we need to link with the legacy OpenGL library (libGL) rather
+ # than the GLVND OpenGL library.  This shuts up CMake 3.11 and later.
+ set(OpenGL_GL_PREFERENCE LEGACY)
+-include(FindOpenGL)
++find_package(OpenGL)
++if(NOT OpenGL_FOUND AND OPENGL_FOUND)
++	set(OpenGL_FOUND TRUE)
++endif()
+ 
+ # Ensure that we build and link against the X11 version of OpenGL on OS X/macOS
+ if(APPLE)
+ 	set(X11_X11_INCLUDE_PATH /opt/X11/include)
+ 	set(OPENGL_gl_LIBRARY /opt/X11/lib/libGL.dylib)
+ 	set(OPENGL_glu_LIBRARY /opt/X11/lib/libGLU.dylib)
++	set(OpenGL_FOUND TRUE)
+ endif()
+ 
+-include_directories(${X11_X11_INCLUDE_PATH} ${OPENGL_INCLUDE_DIR})
++# Server components require desktop OpenGL.  The client can use X11 drawing
++# only (default) and does not need OpenGL at build or run time.
++if(VGL_BUILDSERVER AND NOT OpenGL_FOUND)
++	message(FATAL_ERROR "OpenGL not found (required when VGL_BUILDSERVER=ON)")
++endif()
++if(OpenGL_FOUND)
++	include_directories(${X11_X11_INCLUDE_PATH} ${OPENGL_INCLUDE_DIR})
++	add_definitions(-DVGL_USEGL)
++else()
++	include_directories(${X11_X11_INCLUDE_PATH})
++	message(STATUS "OpenGL not found; building X11-only VirtualGL Client")
++endif()
++boolean_number(OpenGL_FOUND)
++report_option(OpenGL_FOUND "Desktop OpenGL (client -gl drawing / demos)")
+ 
+ option(VGL_USEXV "Enable X Video support" TRUE)
+ boolean_number(VGL_USEXV)
+@@ -396,7 +413,9 @@ if(VGL_BUILDSERVER)
+ 	add_subdirectory(server)
+ endif()
+ add_subdirectory(client)
+-add_subdirectory(demos)
++if(OpenGL_FOUND)
++	add_subdirectory(demos)
++endif()
+ add_subdirectory(diags)
+ add_subdirectory(doc)
+ 
+diff --git a/client/CMakeLists.txt b/client/CMakeLists.txt
+index e1e25f6d..625c6378 100644
+--- a/client/CMakeLists.txt
++++ b/client/CMakeLists.txt
+@@ -4,11 +4,16 @@
+ 
+ include_directories(../common)
+ 
+-add_library(glframe STATIC GLFrame.cpp)
+-target_link_libraries(glframe ${OPENGL_gl_LIBRARY})
++set(VGLCLIENT_LIBS vglcommon ${FBXLIB} vglsocket)
++
++if(OpenGL_FOUND)
++	add_library(glframe STATIC GLFrame.cpp)
++	target_link_libraries(glframe ${OPENGL_gl_LIBRARY})
++	list(APPEND VGLCLIENT_LIBS glframe)
++endif()
+ 
+ add_executable(vglclient vglclient.cpp ClientWin.cpp VGLTransReceiver.cpp)
+-target_link_libraries(vglclient vglcommon ${FBXLIB} glframe vglsocket)
++target_link_libraries(vglclient ${VGLCLIENT_LIBS})
+ install(TARGETS vglclient DESTINATION ${CMAKE_INSTALL_BINDIR})
+ 
+ configure_file(vglconnect.in ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/vglconnect
+diff --git a/client/ClientWin.cpp b/client/ClientWin.cpp
+index 5ed3e258..d9f2851c 100644
+--- a/client/ClientWin.cpp
++++ b/client/ClientWin.cpp
+@@ -16,7 +16,9 @@
+ #include "Error.h"
+ #include "Log.h"
+ #include "Profiler.h"
++#ifdef VGL_USEGL
+ #include "GLFrame.h"
++#endif
+ 
+ using namespace util;
+ using namespace common;
+@@ -38,7 +40,21 @@ ClientWin::ClientWin(int dpynum_, Window window_, int drawMethod_,
+ 	for(int i = 0; i < NFRAMES; i++) xvframes[i] = NULL;
+ 	#endif
+ 	if(drawMethod == RR_DRAWAUTO) drawMethod = RR_DRAWX11;
++#ifndef VGL_USEGL
++	if(drawMethod == RR_DRAWOGL)
++	{
++		vglout.println("OpenGL drawing not available in this build; using X11.");
++		drawMethod = RR_DRAWX11;
++		reqDrawMethod = RR_DRAWX11;
++	}
++	if(stereo)
++	{
++		vglout.println("Stereo requires OpenGL drawing.  Disabling stereo.");
++		stereo = false;
++	}
++#else
+ 	if(stereo) drawMethod = RR_DRAWOGL;
++#endif
+ 	initGL();
+ 	initX11();
+ 
+@@ -69,6 +85,7 @@ ClientWin::~ClientWin(void)
+ 
+ void ClientWin::initGL(void)
+ {
++#ifdef VGL_USEGL
+ 	GLFrame *newfb = NULL;
+ 	char dpystr[80];
+ 	snprintf(dpystr, 80, ":%d.0", dpynum);
+@@ -100,6 +117,7 @@ void ClientWin::initGL(void)
+ 		}
+ 		fb = (Frame *)newfb;
+ 	}
++#endif
+ }
+ 
+ 
+@@ -127,8 +145,11 @@ void ClientWin::initX11(void)
+ 	{
+ 		if(fb)
+ 		{
++#ifdef VGL_USEGL
+ 			if(fb->isGL) { delete ((GLFrame *)fb); }
+-			else delete ((FBXFrame *)fb);
++			else
++#endif
++			delete ((FBXFrame *)fb);
+ 		}
+ 		fb = (Frame *)newfb;
+ 	}
+@@ -178,12 +199,16 @@ void ClientWin::drawFrame(Frame *f)
+ 		CompressedFrame *c = (CompressedFrame *)f;
+ 		if((c->rhdr.flags == RR_RIGHT || c->hdr.flags == RR_LEFT) && !stereo)
+ 		{
++#ifdef VGL_USEGL
+ 			stereo = true;
+ 			if(drawMethod != RR_DRAWOGL)
+ 			{
+ 				drawMethod = RR_DRAWOGL;
+ 				initGL();
+ 			}
++#else
++			vglout.println("Stereo requires OpenGL drawing (not built). Ignoring.");
++#endif
+ 		}
+ 		if((c->hdr.flags == 0) && stereo)
+ 		{
+@@ -230,10 +255,16 @@ void ClientWin::run(void)
+ 				if(f->hdr.flags == RR_EOF)
+ 				{
+ 					pb.startFrame();
++#ifdef VGL_USEGL
+ 					if(fb->isGL) ((GLFrame *)fb)->init(f->hdr, stereo);
+-					else ((FBXFrame *)fb)->init(f->hdr);
++					else
++#endif
++					((FBXFrame *)fb)->init(f->hdr);
++#ifdef VGL_USEGL
+ 					if(fb->isGL) ((GLFrame *)fb)->redraw();
+-					else ((FBXFrame *)fb)->redraw();
++					else
++#endif
++					((FBXFrame *)fb)->redraw();
+ 					pb.endFrame(fb->hdr.framew * fb->hdr.frameh, 0, 1);
+ 					pt.endFrame(fb->hdr.framew * fb->hdr.frameh, bytes, 1);
+ 					bytes = 0;
+@@ -242,8 +273,11 @@ void ClientWin::run(void)
+ 				else
+ 				{
+ 					pd.startFrame();
++#ifdef VGL_USEGL
+ 					if(fb->isGL) *((GLFrame *)fb) = *((CompressedFrame *)f);
+-					else *((FBXFrame *)fb) = *((CompressedFrame *)f);
++					else
++#endif
++					*((FBXFrame *)fb) = *((CompressedFrame *)f);
+ 					pd.endFrame(f->hdr.width * f->hdr.height, 0,
+ 						(double)(f->hdr.width * f->hdr.height) /
+ 							(double)(f->hdr.framew * f->hdr.frameh));
+diff --git a/client/vglclient.cpp b/client/vglclient.cpp
+index 8959a468..e35dd0e1 100644
+--- a/client/vglclient.cpp
++++ b/client/vglclient.cpp
+@@ -219,7 +219,10 @@ void usage(char **argv)
+ 	fprintf(stderr, "-l = Redirect all output to <file>\n");
+ 	fprintf(stderr, "-v = Display version information\n");
+ 	fprintf(stderr, "-x = Use X11 drawing (default)\n");
+-	fprintf(stderr, "-gl = Use OpenGL drawing\n\n");
++#ifdef VGL_USEGL
++	fprintf(stderr, "-gl = Use OpenGL drawing\n");
++#endif
++	fprintf(stderr, "\n");
+ 	exit(1);
+ }
+ 
+@@ -268,8 +271,11 @@ void getEnvironment(void)
+ 	char *env = NULL;  int temp;
+ 	if((env = getenv("VGLCLIENT_DRAWMODE")) != NULL && strlen(env) > 0)
+ 	{
++#ifdef VGL_USEGL
+ 		if(!strnicmp(env, "o", 1)) drawMethod = RR_DRAWOGL;
+-		else if(!strncmp(env, "x", 1)) drawMethod = RR_DRAWX11;
++		else
++#endif
++		if(!strncmp(env, "x", 1)) drawMethod = RR_DRAWX11;
+ 	}
+ 	if((env = getenv("VGLCLIENT_LOG")) != NULL && strlen(env) > 0)
+ 	{
+@@ -325,7 +331,9 @@ int main(int argc, char *argv[])
+ 				else fclose(f);
+ 			}
+ 			else if(!stricmp(argv[i], "-x")) drawMethod = RR_DRAWX11;
++#ifdef VGL_USEGL
+ 			else if(!stricmp(argv[i], "-gl")) drawMethod = RR_DRAWOGL;
++#endif
+ 			else if(!stricmp(argv[i], "-display") && i < argc - 1)
+ 			{
+ 				displayname = argv[++i];
+diff --git a/common/CMakeLists.txt b/common/CMakeLists.txt
+index fdeec5d5..70199d92 100644
+--- a/common/CMakeLists.txt
++++ b/common/CMakeLists.txt
+@@ -12,5 +12,7 @@ target_link_libraries(vglcommon vglutil ${TJPEG_LIBRARY})
+ # UNIT TESTS
+ ###############################################################################
+ 
+-add_executable(frameut frameut.cpp)
+-target_link_libraries(frameut vglcommon ${FBXLIB} glframe)
++if(OpenGL_FOUND)
++	add_executable(frameut frameut.cpp)
++	target_link_libraries(frameut vglcommon ${FBXLIB} glframe)
++endif()
+diff --git a/util/CMakeLists.txt b/util/CMakeLists.txt
+index 0545a8b6..b11dc372 100644
+--- a/util/CMakeLists.txt
++++ b/util/CMakeLists.txt
+@@ -70,11 +70,13 @@ if(UNIX)
+ 		set(IFRLIB nvidia-ifr)
+ 	endif()
+ 
+-	add_executable(glreadtest glreadtest.cpp)
+-	target_link_libraries(glreadtest ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY}
+-		${X11_X11_LIB} ${IFRLIB} vglutil)
+-	if(VGL_BUILDSERVER)
+-		install(TARGETS glreadtest DESTINATION ${CMAKE_INSTALL_BINDIR})
++	if(OpenGL_FOUND)
++		add_executable(glreadtest glreadtest.cpp)
++		target_link_libraries(glreadtest ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY}
++			${X11_X11_LIB} ${IFRLIB} vglutil)
++		if(VGL_BUILDSERVER)
++			install(TARGETS glreadtest DESTINATION ${CMAKE_INSTALL_BINDIR})
++		endif()
+ 	endif()
+ endif()
+ 
+-- 
+2.54.0
+
