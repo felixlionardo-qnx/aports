@@ -1,0 +1,77 @@
+From 7709a2a7dae924c804899bd6fc1ca6bd77ffdb9d Mon Sep 17 00:00:00 2001
+From: felixlionardo <flionardo@blackberry.com>
+Date: Tue, 24 Feb 2026 15:33:58 -0500
+Subject: [PATCH] qnx-fix
+
+---
+ src/qml/jit/qv4assemblercommon.cpp | 20 ++++++++++++++++++++
+ src/qml/jit/qv4assemblercommon_p.h |  8 ++++----
+ 2 files changed, 24 insertions(+), 4 deletions(-)
+
+diff --git a/src/qml/jit/qv4assemblercommon.cpp b/src/qml/jit/qv4assemblercommon.cpp
+index b090fc7597..d2cd88aa50 100644
+--- a/src/qml/jit/qv4assemblercommon.cpp
++++ b/src/qml/jit/qv4assemblercommon.cpp
+@@ -61,6 +61,26 @@ namespace JIT {
+ 
+ Q_LOGGING_CATEGORY(lcAsm, "qt.v4.asm")
+ 
++#if defined(Q_PROCESSOR_X86_64) || defined(ENABLE_ALL_ASSEMBLERS_FOR_REFACTORING_PURPOSES)
++#if defined(Q_OS_LINUX) || defined(Q_OS_QNX) || defined(Q_OS_FREEBSD) || defined(Q_OS_DARWIN)
++const PlatformAssembler_X86_64_SysV::RegisterID
++PlatformAssembler_X86_64_SysV::NoRegister =
++    static_cast<PlatformAssembler_X86_64_SysV::RegisterID>(-1);
++
++    const PlatformAssembler_X86_64_SysV::RegisterID
++    PlatformAssembler_X86_64_SysV::Arg6Reg = PlatformAssembler_X86_64_SysV::NoRegister;
++    
++const PlatformAssembler_X86_64_SysV::RegisterID
++    PlatformAssembler_X86_64_SysV::Arg7Reg = PlatformAssembler_X86_64_SysV::NoRegister;
++#endif
++#endif
++
++#if defined(Q_PROCESSOR_ARM_64) || defined(ENABLE_ALL_ASSEMBLERS_FOR_REFACTORING_PURPOSES)
++const PlatformAssembler_ARM64::RegisterID
++PlatformAssembler_ARM64::NoRegister =
++    static_cast<PlatformAssembler_ARM64::RegisterID>(-1);
++#endif
++
+ namespace {
+ class QIODevicePrintStream: public FilePrintStream
+ {
+diff --git a/src/qml/jit/qv4assemblercommon_p.h b/src/qml/jit/qv4assemblercommon_p.h
+index c3b1eb34eb..ee4b21cd6d 100644
+--- a/src/qml/jit/qv4assemblercommon_p.h
++++ b/src/qml/jit/qv4assemblercommon_p.h
+@@ -73,7 +73,7 @@ class PlatformAssembler_X86_64_SysV : public JSC::MacroAssembler<JSC::MacroAssem
+ public:
+     static constexpr int NativeStackAlignment = 16;
+ 
+-    static const RegisterID NoRegister = RegisterID(-1);
++    static const RegisterID NoRegister;
+ 
+     static const RegisterID ReturnValueRegister   = RegisterID::eax;
+     static const RegisterID ReturnValueRegisterValue = ReturnValueRegister;
+@@ -95,8 +95,8 @@ public:
+     static const RegisterID Arg3Reg = RegisterID::ecx;
+     static const RegisterID Arg4Reg = RegisterID::r8;
+     static const RegisterID Arg5Reg = RegisterID::r9;
+-    static const RegisterID Arg6Reg = NoRegister;
+-    static const RegisterID Arg7Reg = NoRegister;
++    static const RegisterID Arg6Reg;
++    static const RegisterID Arg7Reg;
+     static const int ArgInRegCount = 6;
+ 
+     void popValue()
+@@ -340,7 +340,7 @@ typedef PlatformAssembler_X86_All PlatformAssemblerBase;
+ class PlatformAssembler_ARM64 : public JSC::MacroAssembler<JSC::MacroAssemblerARM64>
+ {
+ public:
+-    static const RegisterID NoRegister = RegisterID(-1);
++    static const RegisterID NoRegister;
+ 
+     static const RegisterID ReturnValueRegister   = JSC::ARM64Registers::x0;
+     static const RegisterID ReturnValueRegisterValue = ReturnValueRegister;
+-- 
+2.54.0
+
