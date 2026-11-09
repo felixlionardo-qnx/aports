@@ -2,7 +2,7 @@
 # Maintainer: Felix Lionardo <flionardo@qnx.com>
 pkgname=ros2-jazzy
 pkgver=20260128
-pkgrel=1
+pkgrel=2
 pkgdesc="ROS 2 Jazzy desktop package"
 url="https://docs.ros.org/en/jazzy/index.html"
 arch="aarch64 x86_64"
@@ -107,7 +107,7 @@ source="
     rosidl_typesupport.tar.gz::https://github.com/ros2/rosidl_typesupport/archive/refs/tags/3.2.2.tar.gz
     rosidl_typesupport_fastrtps.tar.gz::https://github.com/ros2/rosidl_typesupport_fastrtps/archive/refs/tags/3.6.3.tar.gz
     rpyutils.tar.gz::https://github.com/ros2/rpyutils/archive/refs/tags/0.4.2.tar.gz
-    rviz.tar.gz::https://github.com/ros2/rviz/archive/refs/tags/14.1.19.tar.gz
+    rviz.tar.gz::https://github.com/qnx-ports/rviz/archive/refs/tags/r14.1.19_qnx-r0.tar.gz
     spdlog_vendor.tar.gz::https://github.com/ros2/spdlog_vendor/archive/refs/tags/1.6.1.tar.gz
     sros2.tar.gz::https://github.com/ros2/sros2/archive/refs/tags/0.13.5.tar.gz
     system_tests.tar.gz::https://github.com/ros2/system_tests/archive/refs/tags/0.20.4.tar.gz
@@ -124,6 +124,7 @@ source="
     rclcpp.patch
     rcutils.patch
     rosidl_typesupport.patch
+    python_qt_binding.patch
 "
 
 unpack() {
@@ -148,6 +149,15 @@ depends="
         qnx-fs-notify
         qnx-fs-core
         qnx-fs-gpt
+        wayland
+        wayland-protocols
+        libpng
+        sdl3
+        sdl2-compat
+        freetype
+        bullet-sp
+        gtest
+        freeimage
         python3-numpy
         python3-pip
         python3-argcomplete
@@ -195,6 +205,15 @@ depends="
         python3-pytest-rerunfailures
         python3-tomli
         python3-yaml
+	python3-sip
+	python3-qt5
+	python3-pyqt5-sip
+	qt5-qtbase
+	qt5-qtdeclarative
+	qt5-qtgraphicaleffects
+	qt5-qtquickcontrols2
+	qt5-qtsvg
+	qt5-qtwayland
 "
 makedepends="
         boost-dev
@@ -204,7 +223,19 @@ makedepends="
         qnx-fs-notify-dev
         qnx-fs-core-dev
         qnx-fs-gpt-dev
+        qnx-microkernel-dev
         liblocale-shim-dev
+        libpng-dev
+        egl-headers
+        wayland-dev
+        sdl3-dev
+        sdl2-compat-dev
+        sdl2-compat-static
+        freetype-dev
+        freetype-static
+        bullet-sp-dev
+        gtest-dev
+        freeimage-dev
         python3-dev
         python3-pip
         python3-numpy-dev
@@ -252,6 +283,14 @@ makedepends="
         python3-pytest-rerunfailures
         python3-tomli
         python3-yaml
+        python3-sip
+        python3-qt5
+        python3-pyqt5-sip
+        qt5-qtbase-dev
+        qt5-qtdeclarative-dev
+        qt5-qtquickcontrols2-dev
+        qt5-qtsvg-dev
+        qt5-qtwayland-dev	
         cmake
         ninja
         vcstool
@@ -264,8 +303,8 @@ prepare() {
 
     _apply_qnx_patch() {
         local _dir="$1"
-            local _patch="$2"
-            git -C "$builddir/$_dir" apply --whitespace=nowarn "$srcdir/$_patch"
+        local _patch="$2"
+        git -C "$builddir/$_dir" apply --whitespace=nowarn "$srcdir/$_patch"
     }
 
     _apply_qnx_patch src/cyclonedds cyclonedds.patch
@@ -275,6 +314,7 @@ prepare() {
     _apply_qnx_patch src/rcl rcl.patch
     _apply_qnx_patch src/rclcpp rclcpp.patch
     _apply_qnx_patch src/rosidl_typesupport rosidl_typesupport.patch
+    _apply_qnx_patch src/python_qt_binding python_qt_binding.patch
 }
 
 build() {
@@ -293,11 +333,11 @@ build() {
 			-DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS" \
 			-DCMAKE_SHARED_LINKER_FLAGS="$LDFLAGS" \
 			-DTRACETOOLS_TRACEPOINTS_EXCLUDED=ON \
-		--packages-skip-by-dep qt_gui rttest lttngpy rviz2 my-test-package \
-			rviz_ogre_vendor rviz_assimp_vendor tf2_bullet \
-		--packages-skip qt_gui mimick_vendor rttest lttngpy intra_process_demo \
-			turtlesim image_tools rviz2 my-test-package rviz_ogre_vendor \
-			rviz_assimp_vendor tf2_bullet
+		--packages-skip-by-dep rttest lttngpy \
+			tf2_bullet \
+		--packages-skip mimick_vendor rttest lttngpy intra_process_demo \
+			image_tools \
+			tf2_bullet
 }
 
 package() {
@@ -310,8 +350,13 @@ package() {
             [[ -f "$pkgdir"/$dest/$_f ]] && rm "$pkgdir"/$dest/$_f
         done
 
-        sed -i "s|$builddir/install|$dest|g" "$pkgdir/$dest/setup.sh"
-        sed -i "s|$builddir/install|$dest|g" "$pkgdir/$dest/local_setup.sh"
+	grep -rlI "$builddir/install" "$pkgdir/$dest" | while IFS= read -r _f; do
+            sed -i "s|$builddir/install|$dest|g" "$_f"
+        done
+	_media="$pkgdir"/$dest/share/rviz_rendering/ogre_media
+        cd $_media
+        ln -sfn ../../../opt/rviz_ogre_vendor/share/OGRE-14.6/Media/Main
+        ln -sfn ../../../opt/rviz_ogre_vendor/share/OGRE-14.6/Media/RTShaderLib
 }
 
 sha512sums="
@@ -412,7 +457,7 @@ cfa89f04bfae8ce96499f4ebf04c741ed18535f40d8235ef302b55a0f622c7449ab91a761beb3d42
 f8db2be823d9ccfb600d80842940430a90a8828d154f13d364f7b16340b8763f51e120275339e4e34f250f0aecc3170f1dded177ddc1e9f372d2e408bac738ec  rosidl_typesupport.tar.gz
 9497a1e34fcfee070b00190f6d2474bc9e370468b7c714082585e497b6b84595ed0b77c6a5d5e70001fc775d38a3857b427ed2eb655d421c4d2568228197a56d  rosidl_typesupport_fastrtps.tar.gz
 d5cdf160430661dccde8aaafddf76560e383139c33d4f4abc9e7229a72d23c9ea59a71923f47dcd25f02b4fbe2e021649ec7f8e5a8f1b2e1e832e66db5f78d46  rpyutils.tar.gz
-e976571860d8195df5619f00cca1b4a8b314de44377420abbad573defad223540ba57e95b5728a6d3e6da550eff4b0fea967aa234db93386f4e2bb22b991c956  rviz.tar.gz
+5b01439d978110598f3c2bb20c7d1015690629ec683bb4f7c59dbedfa811557ac432d96584ecbcf47a8cf14bcd01e693cf8a4957be03edd3beb7fc8d31c22037  rviz.tar.gz
 d7aecd0204aac2fdd06b7c1b1aa24f38f1b9125886a92f49c3319d44b23292e966651b6e604037c183ca7952b5c5399c39e885a539e4c7e3001f9f3a50121d41  spdlog_vendor.tar.gz
 485a3ba6c70f67ed3cb590adb0bee73cb90dd54cb374a3b5bd6840e3a8173fbb2bff9d72208632556be9df11c5c6b5608fdb6bbce56f4c18834ea03102f5d51d  sros2.tar.gz
 0bc39bfc4371b227d3436de735e71edaaeda2e8f7abafd156317b8b5c93d76ca72c16975a2070a86def307d677a57d17f0fdc37e9606f716688d0b2bede12ef4  system_tests.tar.gz
@@ -429,4 +474,5 @@ d1dd3d0b2b52af53ec0d4a3ba96f671e9f9e07efb0f070737c9748e7d52ab38f864ed7a4c13874e5
 bc7bb061d162c8cc321e49ad65bc9b72f76be3df0c87b135e333c166bdd1307af8f016cc18160107fd1d95fe16518aa2b79899173cd8e2bb4b5c27614db250f2  rclcpp.patch
 436e16a841ee5f88da1ac82bd70cf4e7f9020e4388180763baec89de6bb9ced2ff970569a97880a50ed59717a327bfbe872493977e287811afe3009348bab337  rcutils.patch
 c44bec9bd0f89f5da1e0dba6a9623c44da238a2a990ae6bbda7b3eec19b20e31ffa793adfd057608c0728c4032e1585ac2867e2b517706543f6114970fd71f8d  rosidl_typesupport.patch
+371b6dee28a72de62348380bda1b29f3c0c385df1ddf6410dfc7631e8890652fe9948e19e1a607aff9a2194a926971e5e7f68fdbea51ce88081a35018a377958  python_qt_binding.patch
 "
