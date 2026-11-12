@@ -23,7 +23,7 @@ source="
     cyclonedds.tar.gz::https://github.com/eclipse-cyclonedds/cyclonedds/archive/refs/tags/0.10.5.tar.gz
     iceoryx.tar.gz::https://github.com/eclipse-iceoryx/iceoryx/archive/refs/tags/v2.0.6.tar.gz
     gz_cmake_vendor.tar.gz::https://github.com/gazebo-release/gz_cmake_vendor/archive/refs/tags/0.0.10.tar.gz
-    gz_math_vendor.tar.gz::https://github.com/gazebo-release/gz_math_vendor/archive/refs/tags/0.0.8.tar.gz
+    gz_math_vendor.tar.gz::https://github.com/gazebo-release/gz_math_vendor/archive/refs/tags/0.0.11.tar.gz
     gz_utils_vendor.tar.gz::https://github.com/gazebo-release/gz_utils_vendor/archive/refs/tags/0.0.5.tar.gz
     osrf_pycommon.tar.gz::https://github.com/osrf/osrf_pycommon/archive/refs/tags/2.1.7.tar.gz
     osrf_testing_tools_cpp.tar.gz::https://github.com/osrf/osrf_testing_tools_cpp/archive/refs/tags/2.0.0.tar.gz
@@ -107,7 +107,7 @@ source="
     rosidl_typesupport.tar.gz::https://github.com/ros2/rosidl_typesupport/archive/refs/tags/3.2.2.tar.gz
     rosidl_typesupport_fastrtps.tar.gz::https://github.com/ros2/rosidl_typesupport_fastrtps/archive/refs/tags/3.6.3.tar.gz
     rpyutils.tar.gz::https://github.com/ros2/rpyutils/archive/refs/tags/0.4.2.tar.gz
-    rviz.tar.gz::https://github.com/qnx-ports/rviz/archive/refs/tags/r14.1.19_qnx-r0.tar.gz
+    rviz.tar.gz::https://github.com/qnx-ports/rviz/archive/refs/tags/r14.1.19_qnx-r1.tar.gz
     spdlog_vendor.tar.gz::https://github.com/ros2/spdlog_vendor/archive/refs/tags/1.6.1.tar.gz
     sros2.tar.gz::https://github.com/ros2/sros2/archive/refs/tags/0.13.5.tar.gz
     system_tests.tar.gz::https://github.com/ros2/system_tests/archive/refs/tags/0.20.4.tar.gz
@@ -158,6 +158,7 @@ depends="
         bullet-sp
         gtest
         freeimage
+        pugixml
         python3-numpy
         python3-pip
         python3-argcomplete
@@ -236,6 +237,7 @@ makedepends="
         bullet-sp-dev
         gtest-dev
         freeimage-dev
+        pugixml-dev
         python3-dev
         python3-pip
         python3-numpy-dev
@@ -373,7 +375,7 @@ f70e6e0a030345d062cc5d0f531c143e8f21ba9664a5df0e09dda541cc06cc6f4f5eb2799a449435
 de63a7207c36ff1b185b1a108d697d37675078ac15c34a940429b619b048593056dd8c4c920fb708235b972f94536452973eb40a8e66da1d57cb9b9b03005f30  cyclonedds.tar.gz
 708c113f8b4e5a23830172cd67414cb6fa389f9bc34a5979b27131c3180d6758ca50257baa86cb6f74bcff71b24237cffc0e697964a7c0326e9018fbf7885c09  iceoryx.tar.gz
 6424161b664be5ba6b51f9dd8a6a169916fab67459b2096ce022984eac1cec1765c7c2823e55d217a83615ddd9b53a80a5f5b6c1d4bce90752ce1380893775e6  gz_cmake_vendor.tar.gz
-ad3eee8564b9c28bd9d25e9107175d0a50433a8e122a7bd28e21de970318721ff00307687a5308f4bd628da4c4c11d95c3575c75735e02d89dff1477fb78ccf0  gz_math_vendor.tar.gz
+a6ba1cbcde8faef82e1a5de162032f4606c9fda70d9562e5df1f527f6460346c9041ad3ef0e7f39c6f58b4adfde610aa3c02fb62ea34ed47904a5b1986f12609  gz_math_vendor.tar.gz
 1c7a07fdd0c75df5008c5ee4ffe868f3f6ef09619f8d056773c11f061cff28dd6dc0dafbc49d060ca4f1d4781e243ad636e361359c54b82cdcb35c7365760e0a  gz_utils_vendor.tar.gz
 2a0669e140eaacc5dd4ea9295814ce07f32af15a66274e8924828e175549febfe2c561de99571fc6f78d9454faf23757255ae601a0fddfccf8102419a96f3350  osrf_pycommon.tar.gz
 95b2b179a3d1341fb7b4587652c25f595a799ced1e0da68384caa1faaff175708e70eebb6156712a4d112216085ad02d03e82c7a5419b48d338776be9319ee0b  osrf_testing_tools_cpp.tar.gz
@@ -457,7 +459,7 @@ cfa89f04bfae8ce96499f4ebf04c741ed18535f40d8235ef302b55a0f622c7449ab91a761beb3d42
 f8db2be823d9ccfb600d80842940430a90a8828d154f13d364f7b16340b8763f51e120275339e4e34f250f0aecc3170f1dded177ddc1e9f372d2e408bac738ec  rosidl_typesupport.tar.gz
 9497a1e34fcfee070b00190f6d2474bc9e370468b7c714082585e497b6b84595ed0b77c6a5d5e70001fc775d38a3857b427ed2eb655d421c4d2568228197a56d  rosidl_typesupport_fastrtps.tar.gz
 d5cdf160430661dccde8aaafddf76560e383139c33d4f4abc9e7229a72d23c9ea59a71923f47dcd25f02b4fbe2e021649ec7f8e5a8f1b2e1e832e66db5f78d46  rpyutils.tar.gz
-5b01439d978110598f3c2bb20c7d1015690629ec683bb4f7c59dbedfa811557ac432d96584ecbcf47a8cf14bcd01e693cf8a4957be03edd3beb7fc8d31c22037  rviz.tar.gz
+98f5f5623ef808d2c17255739816321547b01a1a37ed326b173b7ab8e357b2a0fb4f4fd745376bdf970daedab080c95403be94571303ada0d404aa9afa100a61  rviz.tar.gz
 d7aecd0204aac2fdd06b7c1b1aa24f38f1b9125886a92f49c3319d44b23292e966651b6e604037c183ca7952b5c5399c39e885a539e4c7e3001f9f3a50121d41  spdlog_vendor.tar.gz
 485a3ba6c70f67ed3cb590adb0bee73cb90dd54cb374a3b5bd6840e3a8173fbb2bff9d72208632556be9df11c5c6b5608fdb6bbce56f4c18834ea03102f5d51d  sros2.tar.gz
 0bc39bfc4371b227d3436de735e71edaaeda2e8f7abafd156317b8b5c93d76ca72c16975a2070a86def307d677a57d17f0fdc37e9606f716688d0b2bede12ef4  system_tests.tar.gz
