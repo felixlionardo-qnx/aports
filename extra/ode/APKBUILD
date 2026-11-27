@@ -1,0 +1,40 @@
+# Contributor: Hannes Braun <hannes@hannesbraun.net>
+# Maintainer: Hannes Braun <hannes@hannesbraun.net>
+pkgname=ode
+pkgver=0.16.2
+pkgrel=0
+pkgdesc="A free, industrial quality library for simulating rigid body dynamics"
+url="https://ode.org/"
+arch="all"
+license="LGPL-2.1-or-later OR BSD-3-Clause"
+makedepends="autoconf automake libtool"
+source="https://github.com/qnx-ports/ode/archive/refs/tags/qnx-$pkgver-r$pkgrel.tar.gz"
+builddir="$srcdir/ode-qnx-$pkgver-r$pkgrel"
+prepare() {
+	default_prepare
+	autoreconf -fi
+}
+
+build() {
+	export CPPFLAGS="$CPPFLAGS -fPIC"
+	./configure --enable-double-precision \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--mandir=/usr/share/man \
+		--infodir=/usr/share/info \
+		--localstatedir=/var
+	make
+}
+
+check() {
+	make check
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+}
+
+
+sha512sums="
+ac6832b14803bc3cf58e3d45a08c0429d74e0ab0a07ac3cc4ae6a020adf6586d1ada8fe877eac6a747f585d1bad5a5eebe8eb05bceacd5174f9b04590b5ddd60  qnx-0.16.2-r0.tar.gz
+"
