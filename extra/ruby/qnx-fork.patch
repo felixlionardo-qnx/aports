@@ -1,0 +1,36 @@
+diff --git a/process.c b/process.c
+index 5fbc9be022..c0d5c245b3 100644
+--- a/process.c
++++ b/process.c
+@@ -4241,7 +4241,7 @@ rb_fork_ruby(int *status)
+ 
+         disable_child_handler_fork_parent(&old); /* yes, bad name */
+         if (
+-#if defined(__FreeBSD__)
++#if defined(__FreeBSD__) || defined(__QNX__)
+             pid != 0 &&
+ #endif
+             true) {
+diff --git a/thread_pthread.c b/thread_pthread.c
+index 423814cd38..c2e3dc1ca1 100644
+--- a/thread_pthread.c
++++ b/thread_pthread.c
+@@ -3301,6 +3301,10 @@ rb_thread_release_fork_lock(void)
+ void
+ rb_thread_reset_fork_lock(void)
+ {
++#if defined(__QNX__)
++    pthread_rwlock_t init = PTHREAD_RWLOCK_INITIALIZER;
++    rb_thread_fork_rw_lock = init;
++#else
+     int r;
+     if ((r = pthread_rwlock_destroy(&rb_thread_fork_rw_lock))) {
+         rb_bug_errno("pthread_rwlock_destroy", r);
+@@ -3309,6 +3313,7 @@ rb_thread_reset_fork_lock(void)
+     if ((r = pthread_rwlock_init(&rb_thread_fork_rw_lock, NULL))) {
+         rb_bug_errno("pthread_rwlock_init", r);
+     }
++#endif
+ }
+ 
+ void *

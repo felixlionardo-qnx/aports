@@ -35,6 +35,7 @@ subpackages="$pkgname-dbg $pkgname-doc $pkgname-dev
     "
 source="https://cache.ruby-lang.org/pub/ruby/${pkgver%.*}/ruby-$pkgver.tar.gz
         make-compatible-with-qnx8.patch
+	qnx-fork.patch
     "
 options="!check" # Fail at the beginning
 
@@ -48,7 +49,7 @@ prepare() {
 
 build() {
     export CFLAGS="${CFLAGS/-Os/-O2} -O2 -Qunused-arguments -Wno-default-const-init-field-unsafe"
-    export CPPFLAGS="${CPPFLAGS/-Os/-O2} -O2 -Qunused-arguments"
+    export CPPFLAGS="${CPPFLAGS/-Os/-O2} -O2 -Qunused-arguments -DUSE_MN_THREADS=0"
     export LDFLAGS="$LDFLAGS -Wl,-z,execstack -Wl,-z,stack-size=8388608"
 
     # ruby saves path to install. we want use $PATH
@@ -152,4 +153,5 @@ libs() {
 sha512sums="
 7c9b807aa794a19377b0048da0e94869bf57905cf68d4f30b959aefb9f67834a51e06a23c9eee858e7f90938dbc38a5072bc946df502a6bcf86bf198ae061e22  ruby-3.4.7.tar.gz
 371dc628eef3791fa9c3e0e7ae1fec836abdab267c4b2e3562afdc8fbe394055255942e16f6083bb59eb6e122804565eb5b88858faa1f155200adecaf935a4af  make-compatible-with-qnx8.patch
+f4027b1e98121de458ca795c8ffc6a8ea3cab9b3d1ba31e46e49e5af5e94ab8f04495baafa0893c6f1a6b936d4550a46f10281d5a8b831d2cbd851966f46a721  qnx-fork.patch
 "
