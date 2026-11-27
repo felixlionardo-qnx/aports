@@ -1,5 +1,6 @@
-# Contributor: Holger Jaekel <holger.jaekel@gmx.de>
-maintainer="Natanael Copa <ncopa@alpinelinux.org>"
+# Alpine-Contributor: Holger Jaekel <holger.jaekel@gmx.de>
+# Alpine-Maintainer: Natanael Copa <ncopa@alpinelinux.org>
+# Maintainer: Felix Lionardo <flionardo@qnx.com>
 pkgname=proj
 pkgver=9.8.1
 pkgrel=0
