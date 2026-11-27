@@ -1,5 +1,6 @@
-# Contributor: Hannes Braun <hannes@hannesbraun.net>
-# Maintainer: Hannes Braun <hannes@hannesbraun.net>
+# Alpine-Contributor: Hannes Braun <hannes@hannesbraun.net>
+# Alpine-Maintainer: Hannes Braun <hannes@hannesbraun.net>
+# Maintainer: Felix Lionardo <flionardo@qnx.com>
 pkgname=ode
 pkgver=0.16.2
 pkgrel=0
