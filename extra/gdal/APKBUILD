@@ -1,0 +1,52 @@
+# Alpine-Contributor: Trevor R.H. Clarke <trevor@notcows.com>
+# Alpine-Contributor: Holger Jaekel <holger.jaekel@gmx.de>
+# Alpine-Maintainer: Holger Jaekel <holger.jaekel@gmx.de>
+# Maintainer: Felix Lionardo <flionardo@qnx.com>
+pkgname=gdal
+pkgver=3.5.3
+pkgrel=0
+pkgdesc="A translator library for raster and vector geospatial data formats"
+url="https://gdal.org/"
+arch="all"
+license="MIT"
+makedepends="
+	tiff-dev 
+	zstd-dev 
+	libpng-dev 
+	libjpeg-turbo-dev 
+	pcre2-dev 
+	sqlite-dev 
+	libiconv-dev 
+	expat-dev
+	"
+checkdepends="
+	python3-pytest
+	"
+subpackages="$pkgname-dev"
+source="https://github.com/qnx-ports/gdal/archive/refs/tags/qnx-v$pkgname-r0.tar.gz"
+builddir="$srcdir/gdal-qnx-v$pkgname-r0"
+build() {
+	cmake3.5 -B build -G Ninja \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr
+	cmake3.5 --build build
+}
+
+package() {
+	DESTDIR="$pkgdir" cmake3.5 --install build
+}
+
+check() {
+	# TODO: https://trac.osgeo.org/gdal/wiki/TestingNotes
+
+	chmod a+x build/apps/gdal-config
+	build/apps/gdal-config --version | grep -q "$pkgver"
+
+	# confirms MBTiles support
+	build/apps/gdal_translate --formats | grep "MBTiles -raster,vector- (rw+v): MBTiles"
+}
+
+
+sha512sums="
+d9e09a7dca88fd8daa824c95c868991c9e9662aada3bacd75110034976658a696cc28cb3154f9b3d0fc28cced3f6279f98131cc6dc2b06549e6c961f7ec2493a  qnx-v3.5.3-r0.tar.gz
+"
